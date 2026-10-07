@@ -1,0 +1,1650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>生物情報処理演習 第7回：統計学的仮説検定 ①</title>
+  <style>
+    :root {
+      --primary: #1e3a8a;
+      --primary-light: #3b82f6;
+      --secondary: #0d9488;
+      --secondary-light: #14b8a6;
+      --accent: #d97706;
+      --bg: #0f172a;
+      --slide-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --code-bg: #1e293b;
+      --code-text: #e2e8f0;
+      --border: #e2e8f0;
+      --highlight: #fef3c7;
+      --highlight-border: #f59e0b;
+      --badge-theory: #e0f2fe;
+      --badge-theory-text: #0369a1;
+      --badge-practice: #dcfce7;
+      --badge-practice-text: #15803d;
+      --badge-intro: #f3e8ff;
+      --badge-intro-text: #7e22ce;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+      background-color: var(--bg);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      user-select: none;
+    }
+
+    /* Top Header Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 24px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      color: #94a3b8;
+      font-size: 0.85rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      z-index: 10;
+    }
+
+    .top-bar .title {
+      font-weight: 600;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .top-bar .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #f1f5f9;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    /* Slide Container */
+    .slide-viewport {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+    }
+
+    .slide {
+      background: var(--slide-bg);
+      width: 100%;
+      max-width: 1200px;
+      aspect-ratio: 16 / 9;
+      max-height: calc(100vh - 110px);
+      border-radius: 14px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      display: none;
+      flex-direction: column;
+      padding: 40px 50px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .slide.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.985); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Slide Header */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      border-bottom: 2px solid #f1f5f9;
+      padding-bottom: 14px;
+    }
+
+    .slide-title-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .badge {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 3px 10px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-intro { background: var(--badge-intro); color: var(--badge-intro-text); }
+    .badge-theory { background: var(--badge-theory); color: var(--badge-theory-text); }
+    .badge-practice { background: var(--badge-practice); color: var(--badge-practice-text); }
+
+    .slide-title {
+      font-size: 1.85rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.25;
+    }
+
+    .slide-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Slide Body */
+    .slide-body {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      font-size: 1.08rem;
+      line-height: 1.65;
+    }
+
+    /* Grid & Columns */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      height: 100%;
+    }
+
+    .col {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Cards */
+    .card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .card.primary {
+      border-left: 4px solid var(--primary-light);
+    }
+
+    .card.secondary {
+      border-left: 4px solid var(--secondary);
+    }
+
+    .card.accent {
+      border-left: 4px solid var(--accent);
+      background: #fffbeb;
+    }
+
+    .card.danger {
+      border-left: 4px solid #ef4444;
+      background: #fef2f2;
+    }
+
+    .card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Code Block */
+    .code-box {
+      background: var(--code-bg);
+      color: var(--code-text);
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      overflow-x: auto;
+      position: relative;
+      border: 1px solid #334155;
+    }
+
+    .code-box .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: #94a3b8;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      cursor: pointer;
+    }
+
+    .code-box .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+    }
+
+    .hl-kw { color: #f43f5e; font-weight: 600; }
+    .hl-str { color: #38bdf8; }
+    .hl-num { color: #f59e0b; }
+    .hl-com { color: #94a3b8; font-style: italic; }
+    .hl-fn { color: #a78bfa; font-weight: 600; }
+    .hl-hi { background: rgba(245, 158, 11, 0.25); border-radius: 2px; padding: 0 4px; font-weight: bold; color: #fbbf24; }
+
+    /* Key takeaway box */
+    .takeaway {
+      background: linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 16px 20px;
+      font-weight: 600;
+      color: #1e3a8a;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .takeaway-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+    }
+
+    /* Math Formula Display */
+    .formula-box {
+      background: #f1f5f9;
+      border-radius: 8px;
+      padding: 14px;
+      text-align: center;
+      font-size: 1.25rem;
+      font-family: "Cambria Math", "Times New Roman", serif;
+      letter-spacing: 0.05em;
+      color: #0f172a;
+      border: 1px dashed #cbd5e1;
+    }
+
+    /* Lists */
+    ul, ol {
+      padding-left: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    li {
+      line-height: 1.6;
+    }
+
+    li strong {
+      color: var(--primary);
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    th {
+      background: #f1f5f9;
+      color: var(--text-main);
+      text-align: left;
+      padding: 10px 14px;
+      font-weight: 700;
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Bottom Navigation Bar */
+    .bottom-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 24px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      color: #94a3b8;
+      font-size: 0.85rem;
+      z-index: 10;
+    }
+
+    .nav-buttons {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .progress-wrap {
+      flex: 1;
+      max-width: 400px;
+      margin: 0 20px;
+      background: rgba(255, 255, 255, 0.1);
+      height: 6px;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--secondary), var(--primary-light));
+      width: 0%;
+      transition: width 0.2s ease;
+    }
+
+    /* Modal for Slide Jump */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: #ffffff;
+      width: 90%;
+      max-width: 800px;
+      max-height: 80vh;
+      border-radius: 12px;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 10px;
+    }
+
+    .modal-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .modal-item {
+      padding: 10px 14px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .modal-item:hover {
+      background: #eff6ff;
+      border-color: #3b82f6;
+      color: #1e3a8a;
+    }
+
+    /* Print Style */
+    @media print {
+      body {
+        background: transparent;
+        overflow: visible;
+        height: auto;
+      }
+      .top-bar, .bottom-bar, .modal { display: none !important; }
+      .slide-viewport { padding: 0; display: block; }
+      .slide {
+        display: flex !important;
+        page-break-after: always;
+        max-width: none;
+        max-height: none;
+        aspect-ratio: auto;
+        height: 100vh;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <div class="top-bar">
+    <div class="title">
+      <span>🌾 生物情報処理演習 第7回</span>
+      <span style="color: #64748b;">|</span>
+      <span style="font-weight: 400; color: #cbd5e1;">統計学的仮説検定 ①（1標本t検定と対応のあるt検定）</span>
+    </div>
+    <div class="controls">
+      <button class="btn" onclick="toggleModal()">📋 スライド目次</button>
+      <button class="btn" onclick="toggleFullScreen()">⛶ 全画面</button>
+    </div>
+  </div>
+
+  <!-- Main Slide Viewport -->
+  <div class="slide-viewport">
+
+    <!-- Slide 1: Title -->
+    <div class="slide active">
+      <div class="slide-header" style="border: none; margin-bottom: 10px;">
+        <span class="badge badge-intro">第7回 講義・演習</span>
+      </div>
+      <div class="slide-body" style="justify-content: center; align-items: center; text-align: center; gap: 24px;">
+        <div style="font-size: 1.1rem; color: var(--secondary); font-weight: 700; letter-spacing: 0.1em;">
+          BIOLOGICAL DATA ANALYSIS & INFERENCE
+        </div>
+        <h1 style="font-size: 2.7rem; font-weight: 900; color: var(--primary); line-height: 1.25;">
+          統計学的仮説検定 ①
+        </h1>
+        <div style="font-size: 1.4rem; color: var(--text-muted); font-weight: 500;">
+          〜母集団の差を見極める：1標本t検定と対応のあるt検定〜
+        </div>
+        <div style="margin-top: 20px; padding: 12px 28px; background: #f8fafc; border-radius: 9999px; border: 1px solid var(--border); font-size: 0.95rem; color: #475569;">
+          生物情報処理演習 | 実習課題：イネの出穂後茎葉重（枯れ上がり/Stay-green）遺伝解析
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: Goals -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-intro">イントロダクション</span>
+          <h2 class="slide-title">本日のゴール（What & Why）</h2>
+        </div>
+        <span class="slide-subtitle">差があると言える科学的な根拠を手に入れる</span>
+      </div>
+      <div class="slide-body">
+        <div class="takeaway">
+          <span class="takeaway-icon">🎯</span>
+          <span>実験データの「見かけの差」が、単なる偶然（実験誤差）なのか、科学的に本物の差なのかを確率的にジャッジする！</span>
+        </div>
+        <div class="grid-2" style="margin-top: 10px;">
+          <div class="card primary">
+            <h3>1. 検定の論理的フレームワークの修得</h3>
+            <ul>
+              <li>「偶然」と「有意な差」を区別する<strong>背理法の論理</strong>を理解する</li>
+              <li><strong>帰無仮説</strong>と<strong>対立仮説</strong>を正しく設定できる</li>
+              <li><strong>$p$値</strong>と<strong>95%信頼区間</strong>の本当の意味を説明できる</li>
+            </ul>
+          </div>
+          <div class="card secondary">
+            <h3>2. Rによる実践解析と生物学的解釈</h3>
+            <ul>
+              <li>Excelデータ（`.xlsx`）をRに読み込んでデータフレーム化する</li>
+              <li>対応関係を可視化するグラフ（箱ひげ図＋線分）を描画する</li>
+              <li><code>t.test()</code> を実行し、イネの表現型（枯れ上がり）を考察する</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: Roadmap -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-intro">アジェンダ</span>
+          <h2 class="slide-title">本日の授業ロードマップ</h2>
+        </div>
+        <span class="slide-subtitle">講義とハンズオンの2部構成で無理なく完全理解</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card" style="background: #f0fdf4; border-color: #bbf7d0;">
+            <h3 style="color: #166534;">Part 1：講義・理論編（約35分）</h3>
+            <ol>
+              <li><strong>統計学的推測</strong>：母集団と標本、実験誤差</li>
+              <li><strong>中心極限定理</strong>：標本平均のブレと標準誤差 ($SE$)</li>
+              <li><strong>仮説検定の思考法</strong>：帰無仮説・対立仮説・背理法</li>
+              <li><strong>1標本t検定</strong>：$t$値・自由度・$p$値・信頼区間</li>
+              <li><strong>対応のあるt検定</strong>：個体差を相殺する強力な仕組み</li>
+              <li><strong>両側検定と片側検定</strong>：向きの決定ルール</li>
+            </ol>
+          </div>
+          <div class="card" style="background: #eff6ff; border-color: #bfdbfe;">
+            <h3 style="color: #1e40af;">Part 2：実践・HandsOn編（約45分）</h3>
+            <ol>
+              <li><strong>RStudio準備</strong>：プロジェクト確認とExcel読み込み</li>
+              <li><strong>データの可視化</strong>：前後の対応関係を線分で描く</li>
+              <li><strong>課題1の検定</strong>：Genotype A の両側検定</li>
+              <li><strong>課題2の検定</strong>：Genotype B の両側検定</li>
+              <li><strong>課題3の検定</strong>：Genotype B の片側検定</li>
+              <li><strong>レポート完成</strong>：ひな型.Rmdの編集とKnit出力</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: AI Guideline -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-intro">学習ガイド</span>
+          <h2 class="slide-title">生成AI活用ガイド（賢い質問のコツ）</h2>
+        </div>
+        <span class="slide-subtitle">ChatGPT / Gemini / Claude を良きペアプロ相手にしよう</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card" style="border-left: 4px solid #10b981; background: #f0fdf4;">
+            <h3 style="color: #047857;">〇 良い質問の例（自走力がつく！）</h3>
+            <ul>
+              <li>「Rの <code>t.test</code> で <code>alternative='greater'</code> と <code>'less'</code> は第1引数と第2引数のどちらが大きいかを判定しますか？」</li>
+              <li>「対応のあるt検定で95%信頼区間に0が含まれる場合、帰無仮説はどうなりますか？」</li>
+              <li>「Rで <code>cannot open file 'table1.xlsx'</code> と出ました。ワーキングディレクトリの修正手順を教えて」</li>
+            </ul>
+          </div>
+          <div class="card danger">
+            <h3 style="color: #b91c1c;">△ もったいない質問</h3>
+            <ul>
+              <li>「今日の課題の答えを全部作って」
+                <p style="font-size: 0.9rem; color: #7f1d1d; margin-top: 6px;">
+                  ※ AIの出力した $p$ 値や解釈が正しいかを<strong>自分で検証・ジャッジできること</strong>が、研究者・社会人としての真のスキルになります！
+                </p>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="takeaway" style="background: #f8fafc; border-color: #cbd5e1; color: #334155;">
+          <span>💡 <strong>プロンプトのコツ</strong>：「前提条件（コードとエラー文）」＋「自分がどこまで分かっていて、どこで詰まっているか」を伝えると的確な回答が得られます。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: Population vs Sample -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 1/13</span>
+          <h2 class="slide-title">統計学的推測：母集団と標本</h2>
+        </div>
+        <span class="slide-subtitle">知りたい全体像と、手元にある有限のデータ</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card primary">
+            <h3>母集団（Population）</h3>
+            <ul>
+              <li>研究対象となる<strong>全体の集合</strong></li>
+              <li>例：あるイネ品種のすべての個体の茎葉重</li>
+              <li>母平均 $\mu$ や 母分散 $\sigma^2$ は<strong>「神のみぞ知る未知の定数」</strong></li>
+            </ul>
+          </div>
+          <div class="card secondary">
+            <h3>標本（Sample）</h3>
+            <ul>
+              <li>実験や調査で<strong>実際に測定できた一部の個体</strong></li>
+              <li>例：圃場で栽培して刈り取った24個体（サイズ $n = 24$）</li>
+              <li>標本平均 $\bar{x}$ や 不偏分散 $s^2$ は手元で計算可能</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card accent">
+          <h3>⚠️ 実験科学の根本的なジレンマ</h3>
+          <p>標本を採り直すたびに、標本平均 $\bar{x}$ は微妙に変動する（<strong>サンプリング誤差 / 実験誤差</strong>）。<br>
+          「標本平均が基準値と違った」からといって、直ちに「母集団全体でも違う」と断定してよいのか？</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6: Central Limit Theorem & SE -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 2/13</span>
+          <h2 class="slide-title">中心極限定理と標準誤差（SE）</h2>
+        </div>
+        <span class="slide-subtitle">サンプル数 n を増やすと、標本平均のブレは急激に縮まる</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="col">
+            <div class="formula-box">
+              標準誤差： $SE = \frac{s}{\sqrt{n}}$
+            </div>
+            <ul>
+              <li>$s$: 標本の標準偏差（個体ごとのばらつき）</li>
+              <li>$n$: サンプルサイズ（測定した個体数）</li>
+              <li><strong>超重要</strong>：個体数 $n$ を4倍に増やせば、平均値の推定ブレは $\frac{1}{2}$ に縮小する！</li>
+            </ul>
+          </div>
+          <div class="card" style="background: #f8fafc;">
+            <h3>🎲 サイコロ実験の直感（中心極限定理）</h3>
+            <ul>
+              <li>サイコロ1個の目は $1 \sim 6$ が均等に出る（平らな一様分布）</li>
+              <li>しかし、「サイコロ10個振った平均値」を1万回計算してヒストグラムを描くと…？</li>
+              <li><strong>中央（3.5）が尖った綺麗な「正規分布」になる！</strong></li>
+              <li>どんな元の分布であっても、標本平均の誤差は正規分布に従う</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7: Logic of Hypothesis Testing -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 3/13</span>
+          <h2 class="slide-title">仮説検定の思考法：背理法のアプローチ</h2>
+        </div>
+        <span class="slide-subtitle">「差がある」を証明するために「差がない」と仮定してみる</span>
+      </div>
+      <div class="slide-body">
+        <div class="takeaway">
+          <span class="takeaway-icon">💡</span>
+          <span>実験データに差があっても、「たまたま偏ったサンプルを引いただけ（偶然）」という反論を直接論破するのは難しい！</span>
+        </div>
+        <div class="card primary" style="padding: 20px;">
+          <h3 style="margin-bottom: 10px;">検定の4ステップ（背理法の論理展開）</h3>
+          <ol style="gap: 12px;">
+            <li><strong>仮定を置く</strong>：あえて「差はない（母平均の差＝0）」と仮定する（<strong>帰無仮説 $H_0$</strong>）。</li>
+            <li><strong>確率を計算する</strong>：もし差がない世界だとしたら、今回観測されたデータのように極端な結果が偶然生じる確率はどれくらいか？（<strong>$p$値</strong>）</li>
+            <li><strong>ジャッジする</strong>：その確率が極めて低い（例：5%未満）なら…？</li>
+            <li><strong>結論</strong>：「差がないという最初の前提がおかしい！差はある！」と結論づける（<strong>帰無仮説の棄却</strong>）。</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8: H0 and H1 -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 4/13</span>
+          <h2 class="slide-title">帰無仮説（H₀）と対立仮説（H₁）</h2>
+        </div>
+        <span class="slide-subtitle">厳密に分布を計算できる土台を作る</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card" style="border-left: 4px solid #64748b; background: #f8fafc;">
+            <h3>帰無仮説 $H_0$（Null Hypothesis）</h3>
+            <ul>
+              <li><strong>「差はない」「効果はない」「変化なし」</strong></li>
+              <li>数式：$\mu = \mu_0$ または $\mu_1 - \mu_2 = 0$</li>
+              <li><strong>なぜ必要か？</strong>：「差＝0」と固定して初めて、確率分布を数学的に計算できるから！</li>
+              <li><strong>覚え方</strong>：新薬を試したが効果が無に帰した（差がなかった）</li>
+            </ul>
+          </div>
+          <div class="card primary">
+            <h3>対立仮説 $H_1$（Alternative Hypothesis）</h3>
+            <ul>
+              <li><strong>「差がある」「効果がある」「変化した」</strong></li>
+              <li>数式：$\mu \neq \mu_0$ または $\mu_1 \neq \mu_2$</li>
+              <li><strong>実験者が本当に主張したい本命の仮説</strong></li>
+              <li>帰無仮説が「確率的にあり得ない」と退けられたときに採択される</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card danger">
+          <strong>※ 注意：</strong>「差がある」という情報だけでは分布の形を1つに決められないため、直接対立仮説の確率を計算することはできません。だから帰無仮説を経由するのです。
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 9: t-statistic -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 5/13</span>
+          <h2 class="slide-title">1標本t検定の統計量（t値とは何か？）</h2>
+        </div>
+        <span class="slide-subtitle">データのズレが偶然の誤差の何倍大きいか（S/N比）</span>
+      </div>
+      <div class="slide-body">
+        <div class="formula-box">
+          $t = \frac{\text{観測された平均} - \text{期待される基準値}}{\text{標準誤差}} = \frac{\bar{x} - \mu_0}{s / \sqrt{n}}$
+        </div>
+        <div class="grid-2">
+          <div class="card primary">
+            <h3>分子（シグナル）</h3>
+            <p><strong>$\bar{x} - \mu_0$</strong></p>
+            <p>手元の標本平均と、帰無仮説で想定した基準値との間の「実際のズレの大きさ」</p>
+          </div>
+          <div class="card secondary">
+            <h3>分母（ノイズ）</h3>
+            <p><strong>$s / \sqrt{n} = SE$</strong></p>
+            <p>偶然のばらつきによって通常生じうる「実験誤差のものさし（1目盛り）」</p>
+          </div>
+        </div>
+        <div class="takeaway">
+          <span class="takeaway-icon">⚖️</span>
+          <span>$t \approx 0$：ズレは誤差の範囲内（偶然） | $|t| \ge 2.0$ 前後：ズレは誤差の2倍以上（偶然とは考えにくい！）</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 10: p-value Definition -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 6/13</span>
+          <h2 class="slide-title">p値の正しい定義（最重要！）</h2>
+        </div>
+        <span class="slide-subtitle">学術論文・研究発表で最も厳しく見られるポイント</span>
+      </div>
+      <div class="slide-body">
+        <div class="card primary" style="background: #eff6ff; border-left: 5px solid #2563eb; padding: 22px;">
+          <h3 style="color: #1d4ed8; font-size: 1.25rem;">⭕ 正しい定義</h3>
+          <p style="font-size: 1.18rem; font-weight: 700; color: #1e3a8a; margin: 8px 0;">
+            「帰無仮説（差がない）が真であると仮定したときに、今回観測されたデータ（またはそれ以上に極端なデータ）が得られる確率」
+          </p>
+          <p style="color: #3b82f6;">$\rightarrow$ 「もし差がない世界だとしたら、こんな極端な結果が偶然起きる確率はたった〇％しかない」</p>
+        </div>
+        <div class="card danger" style="padding: 18px;">
+          <h3 style="color: #b91c1c;">❌ よくある重大な誤解（使ってはいけない表現）</h3>
+          <ul style="color: #991b1b;">
+            <li>×「帰無仮説が正しい確率」（事後確率ではありません！）</li>
+            <li>×「対立仮説が間違っている確率」</li>
+            <li>×「差がない確率」</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 11: Alpha and Rejection Region -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 7/13</span>
+          <h2 class="slide-title">有意水準（α）と棄却域</h2>
+        </div>
+        <span class="slide-subtitle">どこからを「珍しい」と判定するかの境界線</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card primary">
+            <h3>有意水準 $\alpha = 0.05$（5%水準）</h3>
+            <ul>
+              <li>科学の世界で慣例として使われる判定基準</li>
+              <li>「20回に1回以下しか起きない珍しい事象」が起きたら、偶然とは見なさず仮説を捨てる</li>
+              <li>より厳格にする場合は $\alpha = 0.01$（1%水準）を用いる</li>
+            </ul>
+          </div>
+          <div class="card secondary">
+            <h3>判定ルール</h3>
+            <ul>
+              <li><strong>$p < 0.05$</strong>（有意差あり、Significant）：<br>
+                帰無仮説を棄却 $\rightarrow$「統計学的に有意な差が認められた」</li>
+              <li><strong>$p \ge 0.05$</strong>（有意差なし、Not Significant）：<br>
+                帰無仮説を保留 $\rightarrow$「差があるとは言えない（※差がないことの証明ではない）」</li>
+            </ul>
+          </div>
+        </div>
+        <div class="card" style="background: #f8fafc; font-size: 0.95rem;">
+          <strong>自由度（$df = n - 1$）：</strong> サンプルサイズ $n$ が小さいほど、$t$分布の裾野は正規分布よりも広がり、有意と判定するためのハードル（限界値）が高くなります。
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 12: Confidence Interval -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 8/13</span>
+          <h2 class="slide-title">95%信頼区間（CI）と検定の一致</h2>
+        </div>
+        <span class="slide-subtitle">推定と検定はコインの表と裏</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card primary">
+            <h3>95%信頼区間の意味</h3>
+            <p>「同様のサンプリング実験を100回繰り返したとき、約95回の実験で作った区間が<strong>真の母平均を含んでいる</strong>ような区間」</p>
+            <p style="font-size: 0.9rem; color: #64748b; margin-top: 6px;">※ 幅が狭いほど、母平均を精度良く絞り込めていることを示す</p>
+          </div>
+          <div class="card accent">
+            <h3>検定との美しい 1対1 の対応</h3>
+            <ul>
+              <li><strong>95% CI に基準値（0など）が含まれない</strong><br>
+                $\iff p < 0.05$（有意差あり！）</li>
+              <li><strong>95% CI に基準値が含まれている</strong><br>
+                $\iff p \ge 0.05$（有意差なし）</li>
+            </ul>
+          </div>
+        </div>
+        <div class="takeaway">
+          <span class="takeaway-icon">🔍</span>
+          <span>Rで <code>t.test()</code> を実行すると、$p$値（検定）と95%信頼区間（推定）が同時に出力されます！両方の整合性を必ず確認しましょう。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 13: Type I & II Error, Power -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 9/13</span>
+          <h2 class="slide-title">2種類の過誤（早とちりと見逃し）</h2>
+        </div>
+        <span class="slide-subtitle">生物実験におけるサンプルサイズ設計の重要性</span>
+      </div>
+      <div class="slide-body">
+        <table>
+          <thead>
+            <tr>
+              <th>検定の判断</th>
+              <th>真実：差がない（$H_0$が真）</th>
+              <th>真実：差がある（$H_1$が真）</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>差がある！と判断</strong><br>（帰無仮説を棄却）</td>
+              <td style="background: #fef2f2; color: #b91c1c; font-weight: 700;">
+                第1種の過誤（$\alpha$エラー / 偽陽性）<br>「早とちり」（確率 $\alpha = 0.05$）
+              </td>
+              <td style="background: #f0fdf4; color: #15803d; font-weight: 700;">
+                正しい判定！<br>検出力（Power: $1 - \beta$）
+              </td>
+            </tr>
+            <tr>
+              <td><strong>差がないと判断</strong><br>（帰無仮説を採択/保留）</td>
+              <td style="background: #f0fdf4; color: #15803d; font-weight: 700;">
+                正しい判定！
+              </td>
+              <td style="background: #fffbeb; color: #b45309; font-weight: 700;">
+                第2種の過誤（$\beta$エラー / 偽陰性）<br>「見逃し」
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="card secondary">
+          <h3>検出力（Power）を上げるには？</h3>
+          <p>本当は差があるのに、サンプルサイズ $n$ が小さすぎると第2種の過誤（見逃し）が起きます。<br>
+          <strong>サンプルサイズ $n$ を大きくする</strong>、または<strong>実験精度を上げてばらつき $s$ を小さくする</strong>ことで、見逃しを防ぐことができます！</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 14: What is Paired Data? -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 10/13</span>
+          <h2 class="slide-title">「対応のある2標本」とは何か？</h2>
+        </div>
+        <span class="slide-subtitle">同一個体・同一系統の前と後を比べる</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card" style="border-left: 4px solid #64748b;">
+            <h3>独立な2標本（対応なし）</h3>
+            <ul>
+              <li>A群（10人）と B群（別の10人）</li>
+              <li>「もともと血圧が高い人・低い人」の個体差がノイズとして大きく残る</li>
+            </ul>
+          </div>
+          <div class="card primary">
+            <h3>対応のある2標本（Paired）</h3>
+            <ul>
+              <li><strong>同一のイネ個体</strong>で「出穂後5日」と「出穂後35日」</li>
+              <li>同一人物で「投薬前」と「投薬後」</li>
+              <li>個体ごとの元々の大小のばらつきを<strong>相殺（キャンセル）</strong>できる！</li>
+            </ul>
+          </div>
+        </div>
+        <div class="takeaway">
+          <span class="takeaway-icon">✨</span>
+          <span>個体差という大きなノイズを消し去り、純粋な「処理による変化量（差）」だけを高感度に取り出せるのが最大の強みです。</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 15: Paired t-test Math -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 11/13</span>
+          <h2 class="slide-title">対応のあるt検定の本質</h2>
+        </div>
+        <span class="slide-subtitle">実は「差に対する1標本t検定」と完全に同じ！</span>
+      </div>
+      <div class="slide-body">
+        <div class="formula-box">
+          各ペアの差を計算： $d_i = x_{i, 35} - x_{i, 5}$
+        </div>
+        <div class="grid-2">
+          <div class="card primary">
+            <h3>差のデータ $D = \{d_1, d_2, \dots, d_n\}$ に対する検定</h3>
+            <ul>
+              <li><strong>帰無仮説 $H_0$</strong>：差の母平均は 0 である（$\mu_d = 0$）</li>
+              <li><strong>対立仮説 $H_1$</strong>：差の母平均は 0 ではない（$\mu_d \neq 0$）</li>
+              <li>自由度：$df = n - 1$ （ペア数マイナス1）</li>
+            </ul>
+          </div>
+          <div class="card secondary">
+            <h3>Rでは差を手計算する必要なし！</h3>
+            <p>Rの <code>t.test()</code> に2つの列を渡し、<code>paired = TRUE</code> を指定するだけで、内部で自動的に差を計算して検定してくれます。</p>
+            <div class="code-box" style="margin-top: 8px;">
+              <span class="hl-fn">t.test</span>(x, y, <span class="hl-kw">paired</span> = <span class="hl-num">TRUE</span>)
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 16: Two-sided vs One-sided -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 12/13</span>
+          <h2 class="slide-title">両側検定 vs 片側検定</h2>
+        </div>
+        <span class="slide-subtitle">変化の方向性を事前に限定するかどうか</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card primary">
+            <h3>両側検定（Two-sided）</h3>
+            <ul>
+              <li><strong>問い</strong>：「差があるか？（増えたか減ったか問わない）」</li>
+              <li><strong>対立仮説</strong>：$\mu_d \neq 0$</li>
+              <li>棄却域は左右両端に 2.5% ずつ（合計5%）</li>
+              <li><strong>原則はこちらを使用</strong>（科学論文のデファクトスタンダード）</li>
+              <li>Rオプション：<code>alternative = "two.sided"</code>（デフォルト）</li>
+            </ul>
+          </div>
+          <div class="card secondary">
+            <h3>片側検定（One-sided）</h3>
+            <ul>
+              <li><strong>問い</strong>：「枯れ上がって減ったか？」「薬で熱が下がったか？」</li>
+              <li><strong>対立仮説</strong>：$\mu_d < 0$ または $\mu_d > 0$</li>
+              <li>棄却域は片側だけに 5% を集中配置</li>
+              <li>理論的・生物学的に逆方向の変化が絶対にあり得ない場合のみ使用</li>
+              <li>Rオプション：<code>alternative = "less"</code> または <code>"greater"</code></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 17: One-sided direction rules -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-theory">理論 13/13</span>
+          <h2 class="slide-title">【超重要】Rでの片側検定の向き判定ルール</h2>
+        </div>
+        <span class="slide-subtitle">greater か less かで二度と迷わないための鉄則</span>
+      </div>
+      <div class="slide-body">
+        <div class="formula-box" style="font-size: 1.15rem;">
+          <code>t.test(<strong style="color: #2563eb;">A</strong>, <strong style="color: #d97706;">B</strong>, alternative = "...", paired = TRUE)</code>
+          <div style="font-size: 0.95rem; color: #475569; margin-top: 4px;">
+            ※ R内部の引き算は常に <strong>第1引数 <span style="color: #2563eb;">A</span> － 第2引数 <span style="color: #d97706;">B</span></strong> （$A - B$）
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card primary">
+            <h3>「$A > B$」を主張したいとき</h3>
+            <p>引き算 $A - B$ は <strong>正（$> 0$）</strong> になるので：</p>
+            <div class="code-box">
+              <span class="hl-kw">alternative</span> = <span class="hl-str">"greater"</span>
+            </div>
+          </div>
+          <div class="card accent">
+            <h3>「$A < B$」を主張したいとき</h3>
+            <p>引き算 $A - B$ は <strong>負（$< 0$）</strong> になるので：</p>
+            <div class="code-box">
+              <span class="hl-kw">alternative</span> = <span class="hl-str">"less"</span>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="background: #f8fafc;">
+          <strong>🌾 本日の課題3（SW35がSW5より小さいか？）：</strong><br>
+          ・書き方①：<code>t.test(table2$SW5, table2$SW35, alternative = "greater", paired = TRUE)</code> （$5日 > 35日$）<br>
+          ・書き方②：<code>t.test(table2$SW35, table2$SW5, alternative = "less", paired = TRUE)</code> （$35日 < 5日$）<br>
+          ※ どちらで書いても $p$ 値は完全に一致します！
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 18: Rice Stay-green Background -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 1/13</span>
+          <h2 class="slide-title">実習課題：イネの枯れ上がり遺伝解析</h2>
+        </div>
+        <span class="slide-subtitle">実際の農業・植物科学研究データを解析する</span>
+      </div>
+      <div class="slide-body">
+        <div class="takeaway">
+          <span class="takeaway-icon">🌾</span>
+          <span>出穂後（開花後）、イネは茎葉部の光合成産物を穂（お米）へ転流する。このとき茎葉重が激減して「枯れ上がる」系統と、青々としたまま保たれる「Stay-green」系統が存在する！</span>
+        </div>
+        <div class="grid-2">
+          <div class="card primary">
+            <h3>Genotype = A 群（Table 1, 24系統）</h3>
+            <ul>
+              <li>ジャポニカ型アレルをもつ分離系統群</li>
+              <li><strong>課題 1</strong>：出穂後5日（SW5）と35日（SW35）に差があるか？（両側検定）</li>
+            </ul>
+          </div>
+          <div class="card secondary">
+            <h3>Genotype = B 群（Table 2, 52系統）</h3>
+            <ul>
+              <li>インディカ型アレルをもつ分離系統群</li>
+              <li><strong>課題 2</strong>：SW5とSW35に差があるか？（両側検定）</li>
+              <li><strong>課題 3</strong>：SW35はSW5より小さいか？（片側検定）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 19: Hands-on Workflow -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 2/13</span>
+          <h2 class="slide-title">ハンズオン実習の流れ（4ステップ）</h2>
+        </div>
+        <span class="slide-subtitle">迷わずレポート完成まで駆け抜ける手順</span>
+      </div>
+      <div class="slide-body">
+        <div class="card" style="display: flex; flex-direction: column; gap: 14px; padding: 22px;">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="background: var(--primary); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">1</div>
+            <div><strong>データ読み込み</strong>：Excelファイル（<code>table1.xlsx</code>, <code>table2.xlsx</code>）を読み込んでデータフレームを作成</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="background: var(--secondary); color: white; width: 36px; height: 36px; border-radius: 50%; display: center; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0; display: flex;">2</div>
+            <div><strong>グラフ描画</strong>：箱ひげ図＋ドットプロット＋対応線で増減傾向を視覚的に把握</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="background: var(--accent); color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">3</div>
+            <div><strong>検定の実行</strong>：<code>t.test(..., paired = TRUE)</code> を実行して $t$値・$df$・$p$値・信頼区間を取得</div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div style="background: #10b981; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">4</div>
+            <div><strong>レポート仕上げ</strong>：<code>ひな型.Rmd</code> を編集し、生物学的考察を記入して Knit 実行！</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 20: Step 1 Data Import -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 3/13</span>
+          <h2 class="slide-title">Step 1：Excelデータの読み込み</h2>
+        </div>
+        <span class="slide-subtitle">readxl パッケージで直接読み込む</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="col">
+            <div class="code-box">
+              <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<span class="hl-com"># readxlライブラリをロード</span>
+<span class="hl-fn">library</span>(readxl)
+
+<span class="hl-com"># Excelファイルをデータフレームとして読み込み</span>
+table1 <- <span class="hl-fn">read_excel</span>(<span class="hl-str">"table1.xlsx"</span>)
+table2 <- <span class="hl-fn">read_excel</span>(<span class="hl-str">"table2.xlsx"</span>)
+
+<span class="hl-com"># 先頭数行を確認</span>
+<span class="hl-fn">head</span>(table1)
+            </div>
+            <div class="card primary">
+              <h3>データフレームの列の参照</h3>
+              <p><code>table1$SW5</code> $\rightarrow$ 出穂後5日の茎葉重ベクトル</p>
+              <p><code>table1$SW35</code> $\rightarrow$ 出穂後35日の茎葉重ベクトル</p>
+            </div>
+          </div>
+          <div class="card" style="background: #f8fafc;">
+            <h3>📊 読み込まれたデータ構造</h3>
+            <table>
+              <thead><tr><th>系統</th><th>SW5 (g)</th><th>SW35 (g)</th></tr></thead>
+              <tbody>
+                <tr><td>Line 1</td><td>43.2</td><td>44.1</td></tr>
+                <tr><td>Line 2</td><td>38.9</td><td>37.5</td></tr>
+                <tr><td>...</td><td>...</td><td>...</td></tr>
+              </tbody>
+            </table>
+            <p style="font-size: 0.9rem; color: #64748b; margin-top: 10px;">
+              ※ Environmentパネルの <code>table1</code> をクリックすると表形式で直接確認できます。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 21: Step 2 Visualization -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 4/13</span>
+          <h2 class="slide-title">Step 2：データの可視化（対応関係の描画）</h2>
+        </div>
+        <span class="slide-subtitle">個体ごとの前後の変化を線分で結ぶ</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="code-box">
+            <button class="copy-btn" onclick="copyCode(this)">コピー</button>
+<span class="hl-com"># 1. 箱ひげ図を描く</span>
+<span class="hl-fn">boxplot</span>(table1)
+
+<span class="hl-com"># 2. ドットプロットを重ねる</span>
+<span class="hl-fn">stripchart</span>(table1, <span class="hl-kw">vertical</span> = <span class="hl-num">TRUE</span>,
+           <span class="hl-kw">method</span> = <span class="hl-str">"jitter"</span>, <span class="hl-kw">add</span> = <span class="hl-num">TRUE</span>)
+
+<span class="hl-com"># 3. 対応する点を線分で結ぶ</span>
+<span class="hl-fn">stripchart</span>(table1, <span class="hl-kw">vertical</span> = <span class="hl-num">TRUE</span>)
+<span class="hl-kw">for</span>(i <span class="hl-kw">in</span> <span class="hl-num">1</span>:<span class="hl-fn">length</span>(table1$SW5)) {
+  <span class="hl-fn">lines</span>(<span class="hl-fn">c</span>(<span class="hl-num">1</span>, <span class="hl-num">2</span>), <span class="hl-fn">c</span>(table1$SW5[i], table1$SW35[i]))
+}
+          </div>
+          <div class="card secondary">
+            <h3>📈 グラフから受ける印象の比較</h3>
+            <ul>
+              <li><strong>Genotype A（Table 1）</strong>：
+                線の傾きが上向き・下向きまちまち。出穂後も全体として増減の一貫した傾向は見られない。
+              </li>
+              <li><strong>Genotype B（Table 2）</strong>：
+                ほとんどの線分が<strong>右下がり</strong>に急傾斜！出穂後35日で一貫して減少していることが視覚的にも明白。
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 22: Task 1 Paired Test Genotype A -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 5/13</span>
+          <h2 class="slide-title">Step 3：課題1の検定（Genotype A: 両側検定）</h2>
+        </div>
+        <span class="slide-subtitle">出穂後5日と35日に差はあるか？</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="col">
+            <div class="card primary">
+              <h3>実行コード</h3>
+              <div class="code-box">
+<span class="hl-fn">t.test</span>(table1$SW5, table1$SW35,
+       <span class="hl-kw">alternative</span> = <span class="hl-str">"two.sided"</span>,
+       <span class="hl-kw">conf.level</span> = <span class="hl-num">0.95</span>,
+       <span class="hl-kw">paired</span> = <span class="hl-num">TRUE</span>)
+              </div>
+              <ul style="font-size: 0.9rem; margin-top: 6px;">
+                <li><code>alternative = "two.sided"</code>: 両側検定</li>
+                <li><code>paired = TRUE</code>: 対応あり</li>
+              </ul>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card secondary">
+              <h3>Rのコンソール出力結果</h3>
+              <div class="code-box" style="font-size: 0.85rem;">
+Paired t-test
+data:  table1$SW5 and table1$SW35
+<span class="hl-hi">t = 1.4209, df = 23, p-value = 0.1688</span>
+alternative hypothesis:
+  true mean difference is not equal to 0
+95 percent confidence interval:
+ <span class="hl-hi">-1.007278  5.426261</span>
+sample estimates:
+mean difference: 2.209492
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 23: Task 1 Interpretation -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 6/13</span>
+          <h2 class="slide-title">課題1の出力結果を徹底解剖する</h2>
+        </div>
+        <span class="slide-subtitle">Genotype A は枯れ上がりにくい（Stay-green）</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card" style="background: #f8fafc;">
+            <h3>数値の読み取り</h3>
+            <ul>
+              <li>検定統計量：$t = 1.4209$ （誤差の約1.4倍）</li>
+              <li>自由度：$df = 24 - 1 = 23$</li>
+              <li><strong>$p$値：$p = 0.1688 > 0.05$</strong></li>
+              <li><strong>95%信頼区間：$[-1.007, 5.426]$ （0を挟む！）</strong></li>
+              <li>平均の差：$2.21$ g</li>
+            </ul>
+          </div>
+          <div class="card primary">
+            <h3>判定と結論</h3>
+            <ul>
+              <li>$p > 0.05$ のため、有意水準5%で<strong>帰無仮説は棄却されない</strong></li>
+              <li>95%信頼区間も 0 を含んでいる</li>
+              <li><strong>統計的結論</strong>：出穂後5日と35日の茎葉重に有意な差があるとは言えない</li>
+              <li><strong>生物学的考察</strong>：Genotype A は出穂後35日を経過しても茎葉重が維持されており、<strong>「枯れ上がりにくい」特性</strong>をもつ</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 24: Task 2 Paired Test Genotype B -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 7/13</span>
+          <h2 class="slide-title">Step 3：課題2の検定（Genotype B: 両側検定）</h2>
+        </div>
+        <span class="slide-subtitle">インディカ型アレルをもつ52系統の解析</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="col">
+            <div class="card primary">
+              <h3>実行コード</h3>
+              <div class="code-box">
+<span class="hl-fn">t.test</span>(table2$SW5, table2$SW35,
+       <span class="hl-kw">alternative</span> = <span class="hl-str">"two.sided"</span>,
+       <span class="hl-kw">conf.level</span> = <span class="hl-num">0.95</span>,
+       <span class="hl-kw">paired</span> = <span class="hl-num">TRUE</span>)
+              </div>
+              <ul style="font-size: 0.9rem; margin-top: 6px;">
+                <li>系統数：$n = 52$ 系統</li>
+                <li>検定対象：<code>table2$SW5</code> と <code>table2$SW35</code></li>
+              </ul>
+            </div>
+          </div>
+          <div class="col">
+            <div class="card secondary">
+              <h3>Rのコンソール出力結果</h3>
+              <div class="code-box" style="font-size: 0.85rem;">
+Paired t-test
+data:  table2$SW5 and table2$SW35
+<span class="hl-hi">t = 10.106, df = 51, p-value = 8.986e-14</span>
+alternative hypothesis:
+  true mean difference is not equal to 0
+95 percent confidence interval:
+  <span class="hl-hi">9.486121 14.189264</span>
+sample estimates:
+mean difference: 11.83769
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 25: Task 2 Interpretation -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 8/13</span>
+          <h2 class="slide-title">課題2の出力結果を徹底解剖する</h2>
+        </div>
+        <span class="slide-subtitle">圧倒的な有意差の検出</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card" style="background: #f8fafc;">
+            <h3>数値の読み取り</h3>
+            <ul>
+              <li>検定統計量：$t = 10.106$ （誤差の10倍以上のズレ！）</li>
+              <li>自由度：$df = 52 - 1 = 51$</li>
+              <li><strong>$p$値：$p = 8.986 \times 10^{-14} \ll 0.001$</strong></li>
+              <li><strong>95%信頼区間：$[9.486, 14.189]$ （0を含まない！）</strong></li>
+              <li>平均の差：$11.84$ g 減少</li>
+            </ul>
+          </div>
+          <div class="card accent">
+            <h3>判定と結論</h3>
+            <ul>
+              <li>$p \ll 0.001$ のため、帰無仮説は<strong>極めて高度に有意に棄却！</strong></li>
+              <li>95%信頼区間も完全に正の領域にある</li>
+              <li><strong>統計的結論</strong>：出穂後5日と35日の茎葉重に統計学的に有意な差がある</li>
+              <li><strong>生物学的考察</strong>：Genotype B では出穂後35日までに平均約 11.8 g の茎葉重減少が生じている</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 26: Task 3 One-sided Test -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 9/13</span>
+          <h2 class="slide-title">Step 3：課題3（Genotype B: 片側検定）</h2>
+        </div>
+        <span class="slide-subtitle">SW35はSW5より小さいかを直接検定する</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card primary">
+            <h3>コードの書き方（2パターン）</h3>
+            <div class="code-box">
+<span class="hl-com"># パターン1: SW5 > SW35 (差 > 0)</span>
+<span class="hl-fn">t.test</span>(table2$SW5, table2$SW35,
+       <span class="hl-kw">alternative</span> = <span class="hl-str">"greater"</span>,
+       <span class="hl-kw">paired</span> = <span class="hl-num">TRUE</span>)
+
+<span class="hl-com"># パターン2: SW35 < SW5 (差 < 0)</span>
+<span class="hl-fn">t.test</span>(table2$SW35, table2$SW5,
+       <span class="hl-kw">alternative</span> = <span class="hl-str">"less"</span>,
+       <span class="hl-kw">paired</span> = <span class="hl-num">TRUE</span>)
+            </div>
+          </div>
+          <div class="card secondary">
+            <h3>結果の確認</h3>
+            <ul>
+              <li><strong>$p$値：$p = 4.493 \times 10^{-14}$</strong></li>
+              <li>※ 課題2の両側検定の $p$値（$8.986 \times 10^{-14}$）の<strong>ちょうど半分</strong>！</li>
+              <li>95%片側信頼区間：$[9.876, \infty)$</li>
+              <li><strong>結論</strong>：SW35の平均はSW5の平均よりも<strong>統計学的に有意に小さい</strong>（枯れ上がっている）</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 27: Biological Synthesis -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 10/13</span>
+          <h2 class="slide-title">全体の考察（Genotype A vs B）</h2>
+        </div>
+        <span class="slide-subtitle">統計解析の結果を生物学の言葉に昇華させる</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card primary">
+            <h3>Genotype A（ジャポニカ型）</h3>
+            <p><strong>有意差なし（$p = 0.169$）</strong></p>
+            <p>出穂後時間が経過しても茎葉重が維持されており、出穂後も葉が緑を保つ<strong>「Stay-green（枯れ上がりにくい）」</strong>特性を示す。</p>
+          </div>
+          <div class="card secondary">
+            <h3>Genotype B（インディカ型）</h3>
+            <p><strong>有意に減少（$p < 0.001$, 約11.8g減）</strong></p>
+            <p>出穂後35日にかけて茎葉重が顕著に減少しており、登熟に伴って葉が老化・枯死する<strong>「枯れ上がる（Senescence）」</strong>特性を示す。</p>
+          </div>
+        </div>
+        <div class="takeaway">
+          <span class="takeaway-icon">🌱</span>
+          <span><strong>生物学的意義：</strong>イネの登熟期において、茎葉部の光合成産物や窒素の穂への転流効率や葉の老化プログラムが、この遺伝子座（アレルA vs B）によって制御されていることが示唆される！</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 28: Report Finalization -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 11/13</span>
+          <h2 class="slide-title">レポート課題の仕上げ方（ひな型.Rmd）</h2>
+        </div>
+        <span class="slide-subtitle">手順通りに進めて満点レポートを目指そう</span>
+      </div>
+      <div class="slide-body">
+        <div class="card primary">
+          <h3>編集・提出チェックリスト</h3>
+          <ol style="gap: 10px;">
+            <li><strong>ヘッダーの変更</strong>：
+              <code>author: "あなたの学籍番号・氏名"</code>、<code>date: "今日の日付"</code> に書き換える</li>
+            <li><strong>赤字部分（%%%%%）の執筆</strong>：
+              グラフから受ける印象、仮説の設定、検定統計量と$p$値、生物学的考察を自分の言葉で書く</li>
+            <li><strong>Rコードチャンクの実行</strong>：
+              すべてのコードがエラーなく動作することを確認する</li>
+            <li><strong>Knit（ニット）ボタンをクリック</strong>：
+              RStudio上部の「🧶 Knit」をクリックしてHTMLを生成する</li>
+            <li><strong>HTMLファイルの提出</strong>：
+              生成された <code>ひな型.html</code> を提出する！</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 29: Troubleshooting -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-practice">実践 12/13</span>
+          <h2 class="slide-title">トラブルシューティング（よくあるエラー）</h2>
+        </div>
+        <span class="slide-subtitle">ここで転んでも焦らず対処すれば大丈夫！</span>
+      </div>
+      <div class="slide-body">
+        <div class="grid-2">
+          <div class="card danger">
+            <h3>エラー 1: `cannot open file 'table1.xlsx'`</h3>
+            <p><strong>原因</strong>：ワーキングディレクトリがファイルのある場所とずれている！</p>
+            <p><strong>解決策</strong>：<br>
+            1. RStudioの「Files」ペインでフォルダを開く<br>
+            2. 歯車アイコン「More」$\rightarrow$ <strong>「Set As Working Directory」</strong> をクリック！<br>
+            3. Consoleで <code>dir()</code> と打ってファイル名が表示されればOK！</p>
+          </div>
+          <div class="card accent">
+            <h3>エラー 2: `could not find function "read_excel"`</h3>
+            <p><strong>原因</strong>：<code>readxl</code> ライブラリが読み込まれていない！</p>
+            <p><strong>解決策</strong>：<br>
+            Consoleで <code>library(readxl)</code> を実行。<br>
+            それでもダメなら <code>install.packages("readxl")</code> を実行。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 30: Summary -->
+    <div class="slide">
+      <div class="slide-header">
+        <div class="slide-title-wrap">
+          <span class="badge badge-intro">まとめ</span>
+          <h2 class="slide-title">本日のまとめ & 次回予告</h2>
+        </div>
+        <span class="slide-subtitle">今日の学びを整理しよう</span>
+      </div>
+      <div class="slide-body">
+        <div class="card primary">
+          <h3>本日の3大テイクアウェイ</h3>
+          <ul>
+            <li><strong>1. 検定は「偶然か本物か」を背理法でジャッジする道具</strong><br>
+              帰無仮説（差＝0）が偶然起きる確率（$p$値）が 0.05 未満なら「有意差あり」。$p$値の定義の誤用に注意！</li>
+            <li><strong>2. 対応のあるt検定は「前後の変化」を捉える強力な手法</strong><br>
+              個体差を相殺して差の1標本検定に帰着。片側検定の向き（greater/less）は引き算の正負で判定。</li>
+            <li><strong>3. データ解析のゴールは「生物学的考察」</strong><br>
+              単なる $p$ 値の判定にとどまらず、イネの枯れ上がり・Stay-green特性の意味まで考察する。</li>
+          </ul>
+        </div>
+        <div class="card secondary">
+          <h3>次回予告：検定 ②</h3>
+          <p><strong>「対応のない2標本のt検定（2群の比較・等分散性の検定・Welchのt検定）」</strong><br>
+          今回とは異なり、別々の2つのグループ（例：野生型 vs 変異体）の平均値を比較する方法を学びます！</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Navigation Footer -->
+  <div class="bottom-bar">
+    <div class="nav-buttons">
+      <button class="btn" onclick="prevSlide()">◀ 前へ</button>
+      <button class="btn" onclick="nextSlide()">次へ ▶</button>
+      <span style="font-size: 0.8rem; color: #64748b; margin-left: 8px;">[← / → / Spaceキーで操作可能]</span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div id="slideCounter" style="font-weight: 600; color: #f1f5f9;">
+      1 / 30
+    </div>
+  </div>
+
+  <!-- Slide Jump Modal -->
+  <div class="modal" id="slideModal" onclick="if(event.target === this) toggleModal()">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 style="color: var(--primary);">📋 スライド一覧</h3>
+        <button class="btn" onclick="toggleModal()">✕ 閉じる</button>
+      </div>
+      <div class="modal-list" id="modalList"></div>
+    </div>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    const counter = document.getElementById('slideCounter');
+    const progressBar = document.getElementById('progressBar');
+    const modalList = document.getElementById('modalList');
+
+    // Build modal item list
+    slides.forEach((s, idx) => {
+      const titleElem = s.querySelector('.slide-title') || s.querySelector('h1') || s.querySelector('h2');
+      const titleText = titleElem ? titleElem.innerText.replace(/\n/g, ' ') : `スライド ${idx + 1}`;
+      const item = document.createElement('div');
+      item.className = 'modal-item';
+      item.innerHTML = `<strong>${idx + 1}.</strong> ${titleText}`;
+      item.onclick = () => {
+        goToSlide(idx);
+        toggleModal();
+      };
+      modalList.appendChild(item);
+    });
+
+    function updateSlide() {
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentSlide);
+      });
+      counter.innerText = `${currentSlide + 1} / ${totalSlides}`;
+      progressBar.style.width = `${((currentSlide + 1) / totalSlides) * 100}%`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function goToSlide(idx) {
+      currentSlide = idx;
+      updateSlide();
+    }
+
+    function toggleModal() {
+      document.getElementById('slideModal').classList.toggle('active');
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        }
+      }
+    }
+
+    function copyCode(btn) {
+      const codeBox = btn.closest('.code-box');
+      const text = codeBox.innerText.replace('コピー', '').trim();
+      navigator.clipboard.writeText(text).then(() => {
+        btn.innerText = 'コピー完了!';
+        setTimeout(() => { btn.innerText = 'コピー'; }, 1500);
+      });
+    }
+
+    // Keyboard Navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key === 'f' || e.key === 'F') {
+        toggleFullScreen();
+      } else if (e.key === 'Escape') {
+        document.getElementById('slideModal').classList.remove('active');
+      }
+    });
+
+    updateSlide();
+  </script>
+</body>
+</html>
