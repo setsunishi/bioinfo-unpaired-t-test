@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>生物情報処理演習 第7回：統計学的仮説検定 ①</title>
+
+  <!-- KaTeX CSS & JS for Math Rendering (Primary: jsdelivr, Fallback: cdnjs) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
+        onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.css';">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"
+          onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/katex.min.js';"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"
+          onerror="this.onerror=null;this.src='https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.8/contrib/auto-render.min.js';"
+          onload="initKaTeX()"></script>
+  
   <style>
     :root {
       --primary: #1e3a8a;
@@ -298,6 +308,17 @@
       letter-spacing: 0.05em;
       color: #0f172a;
       border: 1px dashed #cbd5e1;
+    }
+
+    /* KaTeX Styles */
+    .katex {
+      font-size: 1.08em !important;
+    }
+    .formula-box .katex {
+      font-size: 1.25em !important;
+    }
+    .formula-box .katex-display {
+      margin: 0.2em 0 !important;
     }
 
     /* Lists */
@@ -660,7 +681,7 @@
         <div class="grid-2">
           <div class="col">
             <div class="formula-box">
-              標準誤差： $SE = \frac{s}{\sqrt{n}}$
+              標準誤差： $$SE = \frac{s}{\sqrt{n}}$$
             </div>
             <ul>
               <li>$s$: 標本の標準偏差（個体ごとのばらつき）</li>
@@ -754,7 +775,7 @@
       </div>
       <div class="slide-body">
         <div class="formula-box">
-          $t = \frac{\text{観測された平均} - \text{期待される基準値}}{\text{標準誤差}} = \frac{\bar{x} - \mu_0}{s / \sqrt{n}}$
+          $$t = \frac{\text{観測された平均} - \text{期待される基準値}}{\text{標準誤差}} = \frac{\bar{x} - \mu_0}{s / \sqrt{n}}$$
         </div>
         <div class="grid-2">
           <div class="card primary">
@@ -963,7 +984,7 @@
       </div>
       <div class="slide-body">
         <div class="formula-box">
-          各ペアの差を計算： $d_i = x_{i, 35} - x_{i, 5}$
+          各ペアの差を計算： $$d_i = x_{i, 35} - x_{i, 5}$$
         </div>
         <div class="grid-2">
           <div class="card primary">
@@ -1642,6 +1663,32 @@ mean difference: 11.83769
       } else if (e.key === 'Escape') {
         document.getElementById('slideModal').classList.remove('active');
       }
+    });
+
+    // KaTeX Math Rendering
+    function initKaTeX() {
+      if (typeof renderMathInElement === 'function') {
+        renderMathInElement(document.body, {
+          delimiters: [
+            {left: '$$', right: '$$', display: true},
+            {left: '$', right: '$', display: false},
+            {left: '\\[', right: '\\]', display: true},
+            {left: '\\(', right: '\\)', display: false}
+          ],
+          ignoredClasses: ['code-box', 'copy-btn', 'no-math'],
+          ignoredTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code', 'option'],
+          throwOnError: false
+        });
+      }
+    }
+
+    // Attempt to render on DOM ready and window load
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(initKaTeX, 50);
+    });
+    window.addEventListener('load', () => {
+      setTimeout(initKaTeX, 100);
+      setTimeout(initKaTeX, 500);
     });
 
     updateSlide();
